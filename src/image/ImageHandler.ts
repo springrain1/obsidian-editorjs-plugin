@@ -42,13 +42,16 @@ export class ImageHandler {
       const arrayBuffer = await file.arrayBuffer();
 
       // Save to vault
-      await this.app.vault.createBinary(path, arrayBuffer);
+      const createdFile = await this.app.vault.createBinary(path, arrayBuffer);
 
-      // Return relative path
+      // Get resource path for display
+      const resourcePath = this.app.vault.getResourcePath(createdFile);
+
+      // Return resource path for proper display in Obsidian
       return {
         success: 1,
         file: {
-          url: path
+          url: resourcePath
         }
       };
     } catch (error) {
@@ -85,13 +88,16 @@ export class ImageHandler {
       const path = this.getImagePath(fileName);
 
       // Save to vault
-      await this.app.vault.createBinary(path, arrayBuffer);
+      const createdFile = await this.app.vault.createBinary(path, arrayBuffer);
 
-      // Return relative path
+      // Get resource path for display
+      const resourcePath = this.app.vault.getResourcePath(createdFile);
+
+      // Return resource path for proper display in Obsidian
       return {
         success: 1,
         file: {
-          url: path
+          url: resourcePath
         }
       };
     } catch (error) {

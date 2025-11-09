@@ -1,4 +1,5 @@
 import ObsidianEditorJSPlugin from '../main';
+import { Language } from '../i18n';
 
 /**
  * Plugin settings interface
@@ -28,6 +29,9 @@ export interface PluginSettings {
   
   /** Theme preference */
   theme: 'light' | 'dark' | 'auto';
+  
+  /** Interface language */
+  language: Language;
 }
 
 /**
@@ -43,14 +47,22 @@ export const DEFAULT_SETTINGS: PluginSettings = {
     'table',
     'image',
     'code',
-    'quote'
+    'quote',
+    'delimiter',
+    'warning',
+    'raw',
+    'embed',
+    'linkTool',
+    'attaches',
+    'simpleImage'
   ],
   imageFolder: 'attachments',
   defaultViewMode: 'markdown',
   enableVirtualScrolling: true,
   virtualScrollThreshold: 500,
   enableBackup: true,
-  theme: 'auto'
+  theme: 'auto',
+  language: 'zh-CN'
 };
 
 /**

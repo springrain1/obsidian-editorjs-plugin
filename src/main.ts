@@ -3,6 +3,7 @@ import { PluginSettings, SettingsManager } from './settings/SettingsManager';
 import { EditorJSSettingTab } from './settings/SettingsTab';
 import { EditorJSView, VIEW_TYPE_EDITORJS } from './views/EditorJSView';
 import { MetadataManager } from './storage/MetadataManager';
+import { t } from './i18n';
 
 /**
  * Main plugin class for Obsidian Editor.js integration
@@ -22,10 +23,10 @@ export default class ObsidianEditorJSPlugin extends Plugin {
 
     // Initialize settings manager
     this.settingsManager = new SettingsManager(this);
-    
+
     // Initialize metadata manager
     this.metadataManager = new MetadataManager(this.app);
-    
+
     // Load settings from disk
     await this.loadSettings();
 
@@ -76,10 +77,12 @@ export default class ObsidianEditorJSPlugin extends Plugin {
    * Register plugin commands
    */
   private registerCommands(): void {
+    const translations = t(this.settings.language);
+
     // Command: Open as EditorJS view
     this.addCommand({
       id: 'open-as-editorjs',
-      name: '打开为富文本视图',
+      name: translations.openAsRichText,
       checkCallback: (checking: boolean) => {
         const activeFile = this.app.workspace.getActiveFile();
         if (activeFile && activeFile.extension === 'md') {
@@ -95,7 +98,7 @@ export default class ObsidianEditorJSPlugin extends Plugin {
     // Command: Open as Markdown view
     this.addCommand({
       id: 'open-as-markdown',
-      name: '打开为 Markdown',
+      name: translations.openAsMarkdown,
       checkCallback: (checking: boolean) => {
         const activeLeaf = this.app.workspace.activeLeaf;
         if (activeLeaf && activeLeaf.view.getViewType() === VIEW_TYPE_EDITORJS) {
@@ -141,31 +144,32 @@ export default class ObsidianEditorJSPlugin extends Plugin {
    */
   private patchMarkdownView(leaf: WorkspaceLeaf, patchedViews: WeakSet<any>): void {
     const view = leaf.view as any;
-    
+
     // Check if already patched
     if (patchedViews.has(view)) {
       return;
     }
-    
+
     // Mark as patched
     patchedViews.add(view);
-    
+
     // Store original method
     const originalOnPaneMenu = view.onPaneMenu?.bind(view);
-    
+
     // Override onPaneMenu
     view.onPaneMenu = (menu: Menu, source: string) => {
       // Call original implementation first
       if (originalOnPaneMenu) {
         originalOnPaneMenu(menu, source);
       }
-      
+
       // Add our custom menu item
       const file = this.app.workspace.getActiveFile();
       if (file && file.extension === 'md') {
+        const translations = t(this.settings.language);
         menu.addItem((item) => {
           item
-            .setTitle('打开为富文本视图')
+            .setTitle(translations.openAsRichTextMenu)
             .setIcon('edit')
             .onClick(async () => {
               await this.switchToEditorJSView(leaf, file);
@@ -181,7 +185,7 @@ export default class ObsidianEditorJSPlugin extends Plugin {
   private registerViewModeMemory(): void {
     // Disabled for now to avoid conflicts with manual view switching
     // Users can manually switch views using the menu or commands
-    
+
     /* 
     this.registerEvent(
       this.app.workspace.on('file-open', async (file: TFile | null) => {
@@ -209,12 +213,14 @@ export default class ObsidianEditorJSPlugin extends Plugin {
    * @param file - Optional file, defaults to active file
    */
   async switchToEditorJSView(leaf?: WorkspaceLeaf, file?: TFile): Promise<void> {
+    const translations = t(this.settings.language);
+
     try {
       const targetLeaf = leaf || this.app.workspace.activeLeaf;
       const targetFile = file || this.app.workspace.getActiveFile();
 
       if (!targetLeaf || !targetFile) {
-        new Notice('无法切换视图：未找到活动文件');
+        new Notice(translations.noActiveFile);
         return;
       }
 
@@ -224,10 +230,10 @@ export default class ObsidianEditorJSPlugin extends Plugin {
         state: { file: targetFile.path }
       });
 
-      new Notice('已切换到富文本视图');
+      new Notice(translations.switchedToRichText);
     } catch (error) {
       console.error('Failed to switch to EditorJS view:', error);
-      new Notice('切换到富文本视图失败');
+      new Notice(translations.failedToSwitch);
     }
   }
 
@@ -237,12 +243,14 @@ export default class ObsidianEditorJSPlugin extends Plugin {
    * @param file - Optional file, defaults to active file
    */
   async switchToMarkdownView(leaf?: WorkspaceLeaf, file?: TFile): Promise<void> {
+    const translations = t(this.settings.language);
+
     try {
       const targetLeaf = leaf || this.app.workspace.activeLeaf;
       const targetFile = file || this.app.workspace.getActiveFile();
 
       if (!targetLeaf || !targetFile) {
-        new Notice('无法切换视图：未找到活动文件');
+        new Notice(translations.noActiveFile);
         return;
       }
 
@@ -252,10 +260,31 @@ export default class ObsidianEditorJSPlugin extends Plugin {
         state: { file: targetFile.path, mode: 'source' }
       });
 
-      new Notice('已切换到 Markdown 视图');
+      new Notice(translations.switchedToMarkdown);
     } catch (error) {
       console.error('Failed to switch to Markdown view:', error);
-      new Notice('切换到 Markdown 视图失败');
+      new Notice(translations.failedToSwitch);
     }
+  }
+
+  /**
+   * Refresh UI for all open EditorJS views
+   * Called when settings change that affect the UI
+   */
+  refreshUI(): void {
+    // Iterate through all leaves and refresh EditorJS views
+    this.app.workspace.iterateAllLeaves((leaf) => {
+      try {
+        if (leaf.view.getViewType() === VIEW_TYPE_EDITORJS) {
+          const view = leaf.view as EditorJSView;
+          // Check if refresh method exists before calling
+          if (view && typeof view.refresh === 'function') {
+            view.refresh();
+          }
+        }
+      } catch (error) {
+        console.error('Failed to refresh view:', error);
+      }
+    });
   }
 }

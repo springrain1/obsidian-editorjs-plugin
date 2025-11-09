@@ -1,5 +1,6 @@
 import { App, PluginSettingTab, Setting } from 'obsidian';
 import ObsidianEditorJSPlugin from '../main';
+import { t, getAvailableLanguages } from '../i18n';
 
 /**
  * Settings tab for the Editor.js plugin
@@ -18,16 +19,38 @@ export class EditorJSSettingTab extends PluginSettingTab {
    */
   display(): void {
     const { containerEl } = this;
+    const translations = t(this.plugin.settings.language);
 
     containerEl.empty();
 
     // Header
-    containerEl.createEl('h2', { text: 'Editor.js Plugin Settings' });
+    containerEl.createEl('h2', { text: translations.settingsTitle });
+
+    // Language setting (at the top for easy access)
+    new Setting(containerEl)
+      .setName(translations.language)
+      .setDesc(translations.languageDesc)
+      .addDropdown(dropdown => {
+        const languages = getAvailableLanguages();
+        languages.forEach(lang => {
+          dropdown.addOption(lang.value, lang.label);
+        });
+        dropdown
+          .setValue(this.plugin.settings.language)
+          .onChange(async (value: string) => {
+            this.plugin.settings.language = value as any;
+            await this.plugin.saveSettings();
+            // Refresh the settings display immediately
+            this.display();
+            // Notify user
+            this.plugin.refreshUI();
+          });
+      });
 
     // Auto-save interval setting
     new Setting(containerEl)
-      .setName('Auto-save interval')
-      .setDesc('Time in seconds between automatic saves (0 to disable)')
+      .setName(translations.autoSaveInterval)
+      .setDesc(translations.autoSaveIntervalDesc)
       .addText(text => text
         .setPlaceholder('30')
         .setValue(String(this.plugin.settings.autoSaveInterval / 1000))
@@ -41,8 +64,8 @@ export class EditorJSSettingTab extends PluginSettingTab {
 
     // Image folder setting
     new Setting(containerEl)
-      .setName('Image folder')
-      .setDesc('Folder path for storing uploaded images')
+      .setName(translations.imageFolder)
+      .setDesc(translations.imageFolderDesc)
       .addText(text => text
         .setPlaceholder('attachments')
         .setValue(this.plugin.settings.imageFolder)
@@ -53,11 +76,11 @@ export class EditorJSSettingTab extends PluginSettingTab {
 
     // Default view mode setting
     new Setting(containerEl)
-      .setName('Default view mode')
-      .setDesc('Default editor mode when opening files')
+      .setName(translations.defaultViewMode)
+      .setDesc(translations.defaultViewModeDesc)
       .addDropdown(dropdown => dropdown
-        .addOption('markdown', 'Markdown')
-        .addOption('editorjs', 'Rich Text (Editor.js)')
+        .addOption('markdown', translations.markdown)
+        .addOption('editorjs', translations.richText)
         .setValue(this.plugin.settings.defaultViewMode)
         .onChange(async (value: string) => {
           this.plugin.settings.defaultViewMode = value as 'markdown' | 'editorjs';
@@ -66,22 +89,24 @@ export class EditorJSSettingTab extends PluginSettingTab {
 
     // Theme setting
     new Setting(containerEl)
-      .setName('Editor theme')
-      .setDesc('Theme for the Editor.js interface')
+      .setName(translations.editorTheme)
+      .setDesc(translations.editorThemeDesc)
       .addDropdown(dropdown => dropdown
-        .addOption('auto', 'Auto (follow Obsidian)')
-        .addOption('light', 'Light')
-        .addOption('dark', 'Dark')
+        .addOption('auto', translations.auto)
+        .addOption('light', translations.light)
+        .addOption('dark', translations.dark)
         .setValue(this.plugin.settings.theme)
         .onChange(async (value: string) => {
           this.plugin.settings.theme = value as 'light' | 'dark' | 'auto';
           await this.plugin.saveSettings();
+          // Apply theme immediately to all open editors
+          this.plugin.refreshUI();
         }));
 
     // Enable backup setting
     new Setting(containerEl)
-      .setName('Enable backup')
-      .setDesc('Create automatic backups before saving')
+      .setName(translations.enableBackup)
+      .setDesc(translations.enableBackupDesc)
       .addToggle(toggle => toggle
         .setValue(this.plugin.settings.enableBackup)
         .onChange(async (value) => {
@@ -91,8 +116,8 @@ export class EditorJSSettingTab extends PluginSettingTab {
 
     // Virtual scrolling setting
     new Setting(containerEl)
-      .setName('Enable virtual scrolling')
-      .setDesc('Improve performance for large documents')
+      .setName(translations.enableVirtualScrolling)
+      .setDesc(translations.enableVirtualScrollingDesc)
       .addToggle(toggle => toggle
         .setValue(this.plugin.settings.enableVirtualScrolling)
         .onChange(async (value) => {
@@ -102,8 +127,8 @@ export class EditorJSSettingTab extends PluginSettingTab {
 
     // Virtual scrolling threshold
     new Setting(containerEl)
-      .setName('Virtual scrolling threshold')
-      .setDesc('Number of blocks before virtual scrolling activates')
+      .setName(translations.virtualScrollThreshold)
+      .setDesc(translations.virtualScrollThresholdDesc)
       .addText(text => text
         .setPlaceholder('500')
         .setValue(String(this.plugin.settings.virtualScrollThreshold))
@@ -116,21 +141,28 @@ export class EditorJSSettingTab extends PluginSettingTab {
         }));
 
     // Enabled tools section
-    containerEl.createEl('h3', { text: 'Enabled Tools' });
+    containerEl.createEl('h3', { text: translations.enabledTools });
     containerEl.createEl('p', { 
-      text: 'Select which Editor.js tools to enable',
+      text: translations.enabledToolsDesc,
       cls: 'setting-item-description'
     });
 
     const availableTools = [
-      { id: 'header', name: 'Header' },
-      { id: 'paragraph', name: 'Paragraph' },
-      { id: 'list', name: 'List' },
-      { id: 'checklist', name: 'Checklist' },
-      { id: 'table', name: 'Table' },
-      { id: 'image', name: 'Image' },
-      { id: 'code', name: 'Code' },
-      { id: 'quote', name: 'Quote' }
+      { id: 'header', name: translations.header },
+      { id: 'paragraph', name: translations.paragraph },
+      { id: 'list', name: translations.list },
+      { id: 'checklist', name: translations.checklist },
+      { id: 'table', name: translations.table },
+      { id: 'image', name: translations.image },
+      { id: 'simpleImage', name: translations.simpleImage },
+      { id: 'code', name: translations.code },
+      { id: 'quote', name: translations.quote },
+      { id: 'delimiter', name: translations.delimiter },
+      { id: 'warning', name: translations.warning },
+      { id: 'raw', name: translations.raw },
+      { id: 'embed', name: translations.embed },
+      { id: 'linkTool', name: translations.linkTool },
+      { id: 'attaches', name: translations.attaches }
     ];
 
     availableTools.forEach(tool => {
@@ -148,6 +180,8 @@ export class EditorJSSettingTab extends PluginSettingTab {
                 this.plugin.settings.enabledTools.filter(t => t !== tool.id);
             }
             await this.plugin.saveSettings();
+            // Refresh all open editors to apply tool changes
+            this.plugin.refreshUI();
           }));
     });
   }

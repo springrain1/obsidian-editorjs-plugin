@@ -10,6 +10,13 @@ import Checklist from '@editorjs/checklist';
 import InlineCode from '@editorjs/inline-code';
 import Marker from '@editorjs/marker';
 import Underline from '@editorjs/underline';
+import Delimiter from '@editorjs/delimiter';
+import Warning from '@editorjs/warning';
+import RawTool from '@editorjs/raw';
+import Embed from '@editorjs/embed';
+import LinkTool from '@editorjs/link';
+import AttachesTool from '@editorjs/attaches';
+import SimpleImage from '@editorjs/simple-image';
 
 import ObsidianEditorJSPlugin from '../main';
 import { OutputData } from '../editorjs/types';
@@ -78,7 +85,7 @@ export class EditorJSView extends ItemView {
    */
   async setState(state: any, result: any): Promise<void> {
     await super.setState(state, result);
-    
+
     try {
       // Get file from state
       if (state && state.file) {
@@ -237,7 +244,7 @@ export class EditorJSView extends ItemView {
         tools: tools,
         placeholder: 'Press Tab to select a Block',
         autofocus: true,
-        inlineToolbar: ['bold', 'italic', 'underline', 'link', 'marker', 'inlineCode'],
+        inlineToolbar: ['link', 'marker', 'bold', 'italic', 'inlineCode', 'underline'],
         onChange: () => {
           // Trigger debounced save on change
           if (this.debouncedSave) {
@@ -246,6 +253,8 @@ export class EditorJSView extends ItemView {
         },
         onReady: () => {
           console.log('Editor.js is ready');
+          // Log available tools for debugging
+          console.log('Available tools:', Object.keys(tools));
         }
       });
 
@@ -356,10 +365,81 @@ export class EditorJSView extends ItemView {
       };
     }
 
+    if (enabledTools.includes('delimiter')) {
+      tools.delimiter = Delimiter;
+    }
+
+    if (enabledTools.includes('warning')) {
+      tools.warning = {
+        class: Warning,
+        inlineToolbar: true,
+        config: {
+          titlePlaceholder: 'Title',
+          messagePlaceholder: 'Message'
+        }
+      };
+    }
+
+    if (enabledTools.includes('raw')) {
+      tools.raw = RawTool;
+    }
+
+    if (enabledTools.includes('embed')) {
+      tools.embed = {
+        class: Embed,
+        config: {
+          services: {
+            youtube: true,
+            vimeo: true,
+            twitter: true,
+            instagram: true,
+            codepen: true,
+            github: true
+          }
+        }
+      };
+    }
+
+    if (enabledTools.includes('linkTool')) {
+      tools.linkTool = {
+        class: LinkTool,
+        config: {
+          endpoint: ''  // No backend endpoint needed for basic functionality
+        }
+      };
+    }
+
+    if (enabledTools.includes('attaches')) {
+      tools.attaches = {
+        class: AttachesTool,
+        config: {
+          uploader: {
+            uploadByFile: async (file: File) => {
+              // Similar to image upload
+              return await this.imageHandler.uploadByFile(file);
+            }
+          }
+        }
+      };
+    }
+
+    if (enabledTools.includes('simpleImage')) {
+      tools.simpleImage = SimpleImage;
+    }
+
     // Add inline tools (always enabled for text formatting)
-    tools.marker = Marker;
-    tools.inlineCode = InlineCode;
-    tools.underline = Underline;
+    tools.marker = {
+      class: Marker,
+      shortcut: 'CMD+SHIFT+M'
+    };
+    tools.inlineCode = {
+      class: InlineCode,
+      shortcut: 'CMD+SHIFT+C'
+    };
+    tools.underline = {
+      class: Underline,
+      shortcut: 'CMD+U'
+    };
 
     return tools;
   }
@@ -412,16 +492,16 @@ export class EditorJSView extends ItemView {
    */
   private handleError(error: any): void {
     let message = 'An error occurred';
-    
+
     if (error instanceof PluginError) {
       message = error.message;
-      
+
       // Log detailed error
       console.error(`Plugin Error [${error.code}]:`, error.message);
       if (error.originalError) {
         console.error('Original error:', error.originalError);
       }
-      
+
       // Handle specific error types
       if (error.code === ErrorCode.EDITOR_INIT_FAILED) {
         message = 'Failed to initialize editor. Falling back to Markdown view.';
@@ -475,5 +555,32 @@ export class EditorJSView extends ItemView {
 
     // Call parent implementation
     super.onPaneMenu(menu, source);
+  }
+
+  /**
+   * Refresh the view (called when settings change)
+   */
+  refresh(): void {
+    // Reapply theme
+    if (this.editorContainer) {
+      this.themeAdapter.applyTheme(this.editorContainer);
+    }
+
+    // If editor is initialized and file is loaded, reload to apply tool changes
+    if (this.editor && this.file && this.isInitialized) {
+      // Save current state
+      this.editor.save().then(async (data) => {
+        // Destroy and reinitialize editor with new settings
+        this.destroyEditor();
+        await this.initializeEditor(data);
+
+        // Reapply theme
+        if (this.editorContainer) {
+          this.themeAdapter.applyTheme(this.editorContainer);
+        }
+      }).catch((error) => {
+        console.error('Failed to refresh editor:', error);
+      });
+    }
   }
 }
