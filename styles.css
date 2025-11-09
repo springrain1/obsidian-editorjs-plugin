@@ -1,0 +1,119 @@
+/* Obsidian Editor.js Plugin Styles */
+/* All styles are namespaced to avoid conflicts with Obsidian themes */
+
+.obsidian-editorjs-plugin {
+  width: 100%;
+  height: 100%;
+  overflow: auto;
+}
+
+.obsidian-editorjs-plugin .codex-editor {
+  padding: 20px;
+}
+
+.obsidian-editorjs-plugin .ce-block__content,
+.obsidian-editorjs-plugin .ce-toolbar__content {
+  max-width: 100%;
+}
+
+/* Light theme styles */
+.theme-light .obsidian-editorjs-plugin {
+  background-color: var(--background-primary);
+  color: var(--text-normal);
+}
+
+/* Dark theme styles */
+.theme-dark .obsidian-editorjs-plugin {
+  background-color: var(--background-primary);
+  color: var(--text-normal);
+}
+
+/* Editor.js block styles */
+.obsidian-editorjs-plugin .ce-block {
+  padding: 0.4em 0;
+}
+
+.obsidian-editorjs-plugin .ce-toolbar__plus,
+.obsidian-editorjs-plugin .ce-toolbar__settings-btn {
+  color: var(--text-muted);
+}
+
+.obsidian-editorjs-plugin .ce-toolbar__plus:hover,
+.obsidian-editorjs-plugin .ce-toolbar__settings-btn:hover {
+  color: var(--text-normal);
+}
+
+/* Inline toolbar */
+.obsidian-editorjs-plugin .ce-inline-toolbar {
+  background-color: var(--background-secondary);
+  border: 1px solid var(--background-modifier-border);
+  box-shadow: var(--shadow-s);
+}
+
+.obsidian-editorjs-plugin .ce-inline-tool {
+  color: var(--text-normal);
+}
+
+.obsidian-editorjs-plugin .ce-inline-tool:hover {
+  background-color: var(--background-modifier-hover);
+}
+
+/* Conversion toolbar */
+.obsidian-editorjs-plugin .ce-conversion-toolbar {
+  background-color: var(--background-secondary);
+  border: 1px solid var(--background-modifier-border);
+}
+
+.obsidian-editorjs-plugin .ce-conversion-tool {
+  color: var(--text-normal);
+}
+
+.obsidian-editorjs-plugin .ce-conversion-tool:hover {
+  background-color: var(--background-modifier-hover);
+}
+
+/* Settings menu */
+.obsidian-editorjs-plugin .ce-settings {
+  background-color: var(--background-secondary);
+  border: 1px solid var(--background-modifier-border);
+}
+
+.obsidian-editorjs-plugin .ce-settings__button {
+  color: var(--text-normal);
+}
+
+.obsidian-editorjs-plugin .ce-settings__button:hover {
+  background-color: var(--background-modifier-hover);
+}
+
+/* Popover */
+.obsidian-editorjs-plugin .ce-popover {
+  background-color: var(--background-secondary);
+  border: 1px solid var(--background-modifier-border);
+  box-shadow: var(--shadow-s);
+}
+
+.obsidian-editorjs-plugin .ce-popover__item {
+  color: var(--text-normal);
+}
+
+.obsidian-editorjs-plugin .ce-popover__item:hover {
+  background-color: var(--background-modifier-hover);
+}
+
+/* Error handling */
+.obsidian-editorjs-plugin .editor-error {
+  padding: 20px;
+  text-align: center;
+  color: var(--text-error);
+}
+
+.obsidian-editorjs-plugin .editor-error-message {
+  margin-bottom: 10px;
+  font-weight: bold;
+}
+
+.obsidian-editorjs-plugin .editor-error-details {
+  font-size: 0.9em;
+  color: var(--text-muted);
+}
