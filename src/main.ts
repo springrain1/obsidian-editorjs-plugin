@@ -19,8 +19,6 @@ export default class ObsidianEditorJSPlugin extends Plugin {
    * Initializes settings, registers views, commands, and event handlers
    */
   async onload(): Promise<void> {
-    console.log('Loading Obsidian Editor.js Plugin');
-
     // Initialize settings manager
     this.settingsManager = new SettingsManager(this);
 
@@ -47,8 +45,6 @@ export default class ObsidianEditorJSPlugin extends Plugin {
 
     // Add settings tab
     this.addSettingTab(new EditorJSSettingTab(this.app, this));
-
-    console.log('Obsidian Editor.js Plugin loaded successfully');
   }
 
   /**
@@ -56,7 +52,7 @@ export default class ObsidianEditorJSPlugin extends Plugin {
    * Cleanup resources and event handlers
    */
   onunload(): void {
-    console.log('Unloading Obsidian Editor.js Plugin');
+    // Cleanup
   }
 
   /**
@@ -232,7 +228,6 @@ export default class ObsidianEditorJSPlugin extends Plugin {
 
       new Notice(translations.switchedToRichText);
     } catch (error) {
-      console.error('Failed to switch to EditorJS view:', error);
       new Notice(translations.failedToSwitch);
     }
   }
@@ -262,7 +257,6 @@ export default class ObsidianEditorJSPlugin extends Plugin {
 
       new Notice(translations.switchedToMarkdown);
     } catch (error) {
-      console.error('Failed to switch to Markdown view:', error);
       new Notice(translations.failedToSwitch);
     }
   }
@@ -283,7 +277,7 @@ export default class ObsidianEditorJSPlugin extends Plugin {
           }
         }
       } catch (error) {
-        console.error('Failed to refresh view:', error);
+        // Silently fail on refresh
       }
     });
   }

@@ -21,7 +21,9 @@ export default {
   ],
   plugins: [
     typescript({
-      tsconfig: './tsconfig.json'
+      tsconfig: './tsconfig.json',
+      sourceMap: !isProd,
+      inlineSources: !isProd
     }),
     nodeResolve({
       browser: true,
@@ -29,5 +31,33 @@ export default {
     }),
     commonjs(),
     isProd && terser()
-  ].filter(Boolean)
+  ].filter(Boolean),
+  onwarn(warning, warn) {
+    // Suppress eval warnings from third-party plugins
+    if (warning.code === 'EVAL') {
+      const id = warning.id || '';
+      if (id.includes('editorjs-button') || id.includes('editorjs-hyperlink')) {
+        return;
+      }
+    }
+    
+    // Suppress TypeScript warnings from @editorjs/footnotes
+    if (warning.plugin === 'typescript') {
+      const loc = warning.loc || {};
+      const file = loc.file || warning.id || '';
+      if (file.includes('@editorjs/footnotes') || file.includes('node_modules/@editorjs/footnotes')) {
+        return;
+      }
+    }
+    
+    // Suppress plugin-specific warnings from third-party code
+    if (warning.pluginCode && warning.id) {
+      if (warning.id.includes('node_modules/@editorjs/footnotes')) {
+        return;
+      }
+    }
+    
+    // Use default for everything else
+    warn(warning);
+  }
 };

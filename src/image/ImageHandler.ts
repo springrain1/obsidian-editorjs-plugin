@@ -55,7 +55,6 @@ export class ImageHandler {
         }
       };
     } catch (error) {
-      console.error('Image upload failed:', error);
       new Notice('Failed to upload image');
       return {
         success: 0,
@@ -101,7 +100,6 @@ export class ImageHandler {
         }
       };
     } catch (error) {
-      console.error('Image upload by URL failed:', error);
       new Notice('Failed to download and upload image');
       return {
         success: 0,

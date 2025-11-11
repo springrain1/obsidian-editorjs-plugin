@@ -1,7 +1,8 @@
 import { ItemView, WorkspaceLeaf, TFile, Notice, Menu } from 'obsidian';
 import EditorJS from '@editorjs/editorjs';
 import Header from '@editorjs/header';
-import List from '@editorjs/list';
+import Paragraph from '@editorjs/paragraph';
+import NestedList from '@editorjs/nested-list';
 import Table from '@editorjs/table';
 import Image from '@editorjs/image';
 import Code from '@editorjs/code';
@@ -11,12 +12,18 @@ import InlineCode from '@editorjs/inline-code';
 import Marker from '@editorjs/marker';
 import Underline from '@editorjs/underline';
 import Delimiter from '@editorjs/delimiter';
-import Warning from '@editorjs/warning';
-import RawTool from '@editorjs/raw';
 import Embed from '@editorjs/embed';
-import LinkTool from '@editorjs/link';
-import AttachesTool from '@editorjs/attaches';
 import SimpleImage from '@editorjs/simple-image';
+import Undo from 'editorjs-undo';
+import DragDrop from 'editorjs-drag-drop';
+import Alert from 'editorjs-alert';
+import Tooltip from 'editorjs-tooltip';
+import Personality from '@editorjs/personality';
+import Hyperlink from 'editorjs-hyperlink';
+import ToggleBlock from 'editorjs-toggle-block';
+import ChangeCase from 'editorjs-change-case';
+import Strikethrough from 'editorjs-strikethrough';
+import Spoiler from 'editorjs-inline-spoiler-tool';
 
 import ObsidianEditorJSPlugin from '../main';
 import { OutputData } from '../editorjs/types';
@@ -42,6 +49,7 @@ export class EditorJSView extends ItemView {
   private editorContainer: HTMLElement | null = null;
   private debouncedSave: (() => void) | null = null;
   private isInitialized = false;
+  private undo: any = null;
 
   constructor(leaf: WorkspaceLeaf, plugin: ObsidianEditorJSPlugin) {
     super(leaf);
@@ -105,7 +113,6 @@ export class EditorJSView extends ItemView {
         }
       }
     } catch (error) {
-      console.error('Failed to set state:', error);
       this.handleError(error);
     }
   }
@@ -129,27 +136,102 @@ export class EditorJSView extends ItemView {
       // Load file content and convert to blocks
       const blocks = await this.fileManager.loadAsBlocks(this.file);
 
-      // Debug: log the blocks data
-      console.log('Loaded blocks:', JSON.stringify(blocks, null, 2));
-
       // Validate blocks data
       if (!blocks || !blocks.blocks || !Array.isArray(blocks.blocks)) {
         throw new Error('Invalid blocks data structure');
       }
 
-      // Validate each block
-      blocks.blocks.forEach((block, index) => {
+      // Validate and fix each block
+      blocks.blocks = blocks.blocks.filter((block, index) => {
         if (!block.type) {
-          console.warn(`Block ${index} missing type:`, block);
+          return false;
         }
         if (!block.data) {
-          console.warn(`Block ${index} missing data:`, block);
+          block.data = {};
         }
-        if (block.type === 'paragraph' && typeof block.data.text !== 'string') {
-          console.warn(`Block ${index} paragraph has invalid text:`, block.data);
-          // Fix it
-          block.data.text = String(block.data.text || '');
+        
+        // Fix common data issues
+        switch (block.type) {
+          case 'paragraph':
+            if (typeof block.data.text !== 'string') {
+              block.data.text = String(block.data.text || '');
+            }
+            break;
+          case 'header':
+            if (typeof block.data.text !== 'string') {
+              block.data.text = String(block.data.text || '');
+            }
+            if (typeof block.data.level !== 'number') {
+              block.data.level = 2;
+            }
+            break;
+          case 'list':
+            if (!Array.isArray(block.data.items)) {
+              block.data.items = [];
+            }
+            // NestedList expects items as objects with content property
+            // Convert string items to NestedList format
+            block.data.items = block.data.items
+              .filter((item: any) => item !== undefined && item !== null)
+              .map((item: any) => {
+                if (typeof item === 'string') {
+                  // Convert string to NestedList format
+                  return {
+                    content: item,
+                    items: []
+                  };
+                } else if (typeof item === 'object' && item.content !== undefined) {
+                  // Already in NestedList format
+                  return {
+                    content: String(item.content),
+                    items: Array.isArray(item.items) ? item.items : []
+                  };
+                } else {
+                  // Fallback: convert to NestedList format
+                  return {
+                    content: String(item),
+                    items: []
+                  };
+                }
+              });
+            break;
+          case 'checklist':
+            if (!Array.isArray(block.data.items)) {
+              block.data.items = [];
+            }
+            block.data.items = block.data.items.map((item: any) => ({
+              text: String(item.text || ''),
+              checked: Boolean(item.checked)
+            }));
+            break;
+          case 'table':
+            if (!Array.isArray(block.data.content)) {
+              block.data.content = [[]];
+            }
+            break;
+          case 'image':
+            if (!block.data.file || !block.data.file.url) {
+              return false;
+            }
+            break;
+          case 'layout':
+            // Validate layout block structure
+            if (!block.data.itemContent || typeof block.data.itemContent !== 'object') {
+              block.data.itemContent = {};
+            }
+            if (!block.data.layout || typeof block.data.layout !== 'object') {
+              block.data.layout = {
+                type: 'container',
+                id: '',
+                className: '',
+                style: '',
+                children: []
+              };
+            }
+            break;
         }
+        
+        return true;
       });
 
       // Destroy existing editor if any
@@ -177,7 +259,6 @@ export class EditorJSView extends ItemView {
       this.isInitialized = true;
 
     } catch (error) {
-      console.error('Failed to load file content:', error);
       this.handleError(error);
     }
   }
@@ -191,7 +272,7 @@ export class EditorJSView extends ItemView {
       try {
         await this.saveFile();
       } catch (error) {
-        console.error('Failed to save on close:', error);
+        // Silently fail on close
       }
     }
 
@@ -244,7 +325,25 @@ export class EditorJSView extends ItemView {
         tools: tools,
         placeholder: 'Press Tab to select a Block',
         autofocus: true,
-        inlineToolbar: ['link', 'marker', 'bold', 'italic', 'inlineCode', 'underline'],
+        inlineToolbar: ['marker', 'bold', 'underline', 'italic', 'strikethrough', 'inlineCode', 'link'],
+        // Enable default shortcuts (Ctrl+Z, Ctrl+Y, etc.)
+        defaultBlock: 'paragraph',
+        // Sanitize data to prevent validation errors
+        sanitizer: {
+          b: true,
+          i: true,
+          u: true,
+          a: {
+            href: true,
+            class: true
+          },
+          mark: {
+            class: true
+          },
+          code: {
+            class: true
+          }
+        },
         onChange: () => {
           // Trigger debounced save on change
           if (this.debouncedSave) {
@@ -252,13 +351,29 @@ export class EditorJSView extends ItemView {
           }
         },
         onReady: () => {
-          console.log('Editor.js is ready');
-          // Log available tools for debugging
-          console.log('Available tools:', Object.keys(tools));
+          // Setup keyboard shortcuts
+          this.setupKeyboardShortcuts();
         }
       });
 
       await this.editor.isReady;
+
+      // Initialize Undo plugin
+      this.undo = new Undo({ editor: this.editor });
+      this.undo.initialize(data);
+      
+      // Initialize DragDrop plugin after DOM is ready
+      // Use requestAnimationFrame to ensure DOM is fully rendered
+      requestAnimationFrame(() => {
+        try {
+          if (this.editor) {
+            new DragDrop(this.editor);
+          }
+        } catch (error) {
+          // Silently fail if drag-drop initialization fails
+          // This can happen if DOM elements are not yet available
+        }
+      });
 
       // Setup debounced save
       this.debouncedSave = debounce(async () => {
@@ -266,7 +381,6 @@ export class EditorJSView extends ItemView {
       }, 500);
 
     } catch (error) {
-      console.error('Failed to initialize editor:', error);
       throw new PluginError(
         ErrorCode.EDITOR_INIT_FAILED,
         'Failed to initialize Editor.js',
@@ -295,12 +409,20 @@ export class EditorJSView extends ItemView {
     }
 
     if (enabledTools.includes('paragraph')) {
-      // Paragraph is default, no need to configure
+      tools.paragraph = {
+        class: Paragraph,
+        inlineToolbar: true,
+        config: {
+          placeholder: 'Enter text',
+          preserveBlank: false
+        }
+      };
     }
 
     if (enabledTools.includes('list')) {
+      // Use NestedList for better nested list support
       tools.list = {
-        class: List,
+        class: NestedList,
         inlineToolbar: true,
         config: {
           defaultStyle: 'unordered'
@@ -369,21 +491,6 @@ export class EditorJSView extends ItemView {
       tools.delimiter = Delimiter;
     }
 
-    if (enabledTools.includes('warning')) {
-      tools.warning = {
-        class: Warning,
-        inlineToolbar: true,
-        config: {
-          titlePlaceholder: 'Title',
-          messagePlaceholder: 'Message'
-        }
-      };
-    }
-
-    if (enabledTools.includes('raw')) {
-      tools.raw = RawTool;
-    }
-
     if (enabledTools.includes('embed')) {
       tools.embed = {
         class: Embed,
@@ -400,31 +507,57 @@ export class EditorJSView extends ItemView {
       };
     }
 
-    if (enabledTools.includes('linkTool')) {
-      tools.linkTool = {
-        class: LinkTool,
-        config: {
-          endpoint: ''  // No backend endpoint needed for basic functionality
-        }
-      };
-    }
-
-    if (enabledTools.includes('attaches')) {
-      tools.attaches = {
-        class: AttachesTool,
-        config: {
-          uploader: {
-            uploadByFile: async (file: File) => {
-              // Similar to image upload
-              return await this.imageHandler.uploadByFile(file);
-            }
-          }
-        }
-      };
-    }
-
     if (enabledTools.includes('simpleImage')) {
       tools.simpleImage = SimpleImage;
+    }
+    
+    // New tools
+    if (enabledTools.includes('alert')) {
+      tools.alert = {
+        class: Alert,
+        inlineToolbar: true,
+        config: {
+          defaultType: 'primary',
+          messagePlaceholder: 'Enter message'
+        }
+      };
+    }
+    
+    
+    if (enabledTools.includes('tooltip')) {
+      tools.tooltip = {
+        class: Tooltip,
+        config: {
+          location: 'left',
+          underline: true,
+          placeholder: 'Tooltip text',
+          highlightColor: '#FFEFD5',
+          backgroundColor: '#154360',
+          textColor: '#FDFEFE',
+          holder: 'editorjs'
+        }
+      };
+    }
+    
+    if (enabledTools.includes('personality')) {
+      tools.personality = {
+        class: Personality,
+        config: {
+          nameMaxLength: 30,
+          textMaxLength: 500
+        }
+      };
+    }
+
+    // New advanced tools
+    if (enabledTools.includes('toggle')) {
+      tools.toggle = {
+        class: ToggleBlock,
+        inlineToolbar: true,
+        config: {
+          placeholder: 'Toggle content'
+        }
+      };
     }
 
     // Add inline tools (always enabled for text formatting)
@@ -440,9 +573,30 @@ export class EditorJSView extends ItemView {
       class: Underline,
       shortcut: 'CMD+U'
     };
+    tools.strikethrough = {
+      class: Strikethrough,
+      shortcut: 'CMD+SHIFT+X'
+    };
+    tools.spoiler = Spoiler;
+    tools.changeCase = {
+      class: ChangeCase
+    };
+    tools.hyperlink = {
+      class: Hyperlink,
+      config: {
+        shortcut: 'CMD+L',
+        target: '_blank',
+        rel: 'nofollow',
+        availableTargets: ['_blank', '_self'],
+        availableRels: ['author', 'noreferrer'],
+        validate: false,
+      }
+    };
 
     return tools;
   }
+
+
 
   /**
    * Save file content
@@ -464,10 +618,7 @@ export class EditorJSView extends ItemView {
       // Save to file
       await this.fileManager.saveFromBlocks(this.file, data);
 
-      console.log('File saved successfully');
-
     } catch (error) {
-      console.error('Failed to save file:', error);
       new Notice('Failed to save file');
       throw error;
     }
@@ -477,12 +628,17 @@ export class EditorJSView extends ItemView {
    * Destroy editor instance
    */
   private destroyEditor(): void {
+    // Note: editorjs-undo doesn't have a destroy method, just clear the reference
+    if (this.undo) {
+      this.undo = null;
+    }
+    
     if (this.editor) {
       try {
         this.editor.destroy();
         this.editor = null;
       } catch (error) {
-        console.error('Failed to destroy editor:', error);
+        // Silently fail on destroy
       }
     }
   }
@@ -510,7 +666,6 @@ export class EditorJSView extends ItemView {
       }
     } else if (error instanceof Error) {
       message = error.message;
-      console.error('Error:', error);
     }
 
     new Notice(message);
@@ -526,7 +681,7 @@ export class EditorJSView extends ItemView {
       const leaf = this.app.workspace.getLeaf(false);
       await leaf.openFile(this.file, { state: { mode: 'source' } });
     } catch (error) {
-      console.error('Failed to switch to markdown view:', error);
+      // Silently fail
     }
   }
 
@@ -558,6 +713,55 @@ export class EditorJSView extends ItemView {
   }
 
   /**
+   * Setup keyboard shortcuts for undo/redo
+   * Uses high priority event capture to intercept before Obsidian's handlers
+   */
+  private setupKeyboardShortcuts(): void {
+    if (!this.editorContainer) return;
+    
+    // Use capture phase to intercept events before Obsidian
+    const handleKeyDown = (e: KeyboardEvent) => {
+      const isMod = e.ctrlKey || e.metaKey;
+      
+      // Ctrl/Cmd+Z for undo
+      if (isMod && e.key === 'z' && !e.shiftKey) {
+        e.preventDefault();
+        e.stopPropagation();
+        if (this.undo) {
+          this.undo.undo();
+        }
+        return;
+      }
+      
+      // Ctrl/Cmd+Shift+Z or Ctrl/Cmd+Y for redo
+      if (isMod && ((e.shiftKey && e.key === 'z') || e.key === 'y')) {
+        e.preventDefault();
+        e.stopPropagation();
+        if (this.undo) {
+          this.undo.redo();
+        }
+        return;
+      }
+      
+      // Ctrl/Cmd+S for save
+      if (isMod && e.key === 's') {
+        e.preventDefault();
+        e.stopPropagation();
+        this.saveFile();
+        return;
+      }
+    };
+    
+    // Add listener in capture phase with high priority
+    this.editorContainer.addEventListener('keydown', handleKeyDown, true);
+    
+    // Clean up on view close
+    this.register(() => {
+      this.editorContainer?.removeEventListener('keydown', handleKeyDown, true);
+    });
+  }
+  
+  /**
    * Refresh the view (called when settings change)
    */
   refresh(): void {
@@ -578,8 +782,8 @@ export class EditorJSView extends ItemView {
         if (this.editorContainer) {
           this.themeAdapter.applyTheme(this.editorContainer);
         }
-      }).catch((error) => {
-        console.error('Failed to refresh editor:', error);
+      }).catch(() => {
+        // Silently fail on refresh
       });
     }
   }

@@ -35,7 +35,6 @@ export class MetadataManager {
 
       return frontMatter.editorjs as EditorJSMetadata;
     } catch (error) {
-      console.error('Failed to get metadata:', error);
       throw new PluginError(
         ErrorCode.METADATA_PARSE_ERROR,
         'Failed to parse file metadata',
@@ -53,7 +52,6 @@ export class MetadataManager {
       const updatedContent = this.updateFrontMatter(content, metadata);
       await this.app.vault.modify(file, updatedContent);
     } catch (error) {
-      console.error('Failed to update metadata:', error);
       throw new PluginError(
         ErrorCode.METADATA_PARSE_ERROR,
         'Failed to update file metadata',
@@ -86,7 +84,6 @@ export class MetadataManager {
       
       return result;
     } catch (error) {
-      console.error('Failed to parse front-matter:', error);
       return null;
     }
   }

@@ -30,7 +30,6 @@ export class FileManager {
     try {
       return await this.vault.read(file);
     } catch (error) {
-      console.error('Failed to read file:', error);
       throw new PluginError(
         ErrorCode.FILE_READ_ERROR,
         `Failed to read file: ${file.path}`,
@@ -46,7 +45,6 @@ export class FileManager {
     try {
       await this.vault.modify(file, content);
     } catch (error) {
-      console.error('Failed to write file:', error);
       throw new PluginError(
         ErrorCode.FILE_WRITE_ERROR,
         `Failed to write file: ${file.path}`,
@@ -71,8 +69,7 @@ export class FileManager {
         await this.vault.create(backupPath, content);
       }
     } catch (error) {
-      console.error('Failed to create backup:', error);
-      // Don't throw error for backup failure, just log it
+      // Don't throw error for backup failure
     }
   }
 
@@ -91,8 +88,6 @@ export class FileManager {
       
       return blocks;
     } catch (error) {
-      console.error('Failed to load file as blocks:', error);
-      
       if (error instanceof PluginError) {
         throw error;
       }
@@ -146,8 +141,6 @@ export class FileManager {
       await this.metadataManager.updateMetadata(file, metadata);
       
     } catch (error) {
-      console.error('Failed to save blocks to file:', error);
-      
       if (error instanceof PluginError) {
         throw error;
       }
