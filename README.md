@@ -20,14 +20,14 @@
 ### 安装
 
 #### 方式一：手动安装（推荐）
-1. 从 [Releases](https://github.com/yourusername/obsidian-editorjs-plugin/releases) 下载最新版本
+1. 从 [Releases](https://github.com/springrain1/obsidian-editorjs-plugin/releases) 下载最新版本
 2. 解压文件到 Obsidian 插件文件夹：`<vault>/.obsidian/plugins/obsidian-editorjs-plugin/`
 3. 重启 Obsidian 或重新加载插件
 4. 在设置中启用 "EditorJS Plugin"
 
 #### 方式二：从源码构建
 ```bash
-git clone https://github.com/yourusername/obsidian-editorjs-plugin.git
+git clone https://github.com/springrain1/obsidian-editorjs-plugin.git
 cd obsidian-editorjs-plugin
 npm install
 npm run build
@@ -42,11 +42,11 @@ npm run build
 
 ## 📚 文档
 
-- **[快速参考](QUICK_REFERENCE.md)** - 快捷键和常用语法
-- **[插件指南](PLUGINS_GUIDE.md)** - 所有工具的详细说明
-- **[测试指南](TESTING_GUIDE.md)** - 如何测试所有功能
-- **[功能总结](FEATURES_SUMMARY.md)** - 完整功能列表
-- **[技术细节](FINAL_SOLUTION.md)** - 实现原理和解决方案
+- **[快速参考](./docs/QUICK_REFERENCE.md)** - 快捷键和常用语法
+- **[插件指南](./docs/PLUGINS_GUIDE.md)** - 所有工具的详细说明
+- **[测试指南](./docs/TESTING_GUIDE.md)** - 如何测试所有功能
+- **[功能总结](./docs/FEATURES_SUMMARY.md)** - 完整功能列表
+- **[技术细节](./docs/FINAL_SOLUTION.md)** - 实现原理和解决方案
 
 ## 🎯 核心功能
 
@@ -194,7 +194,7 @@ obsidian-editorjs-plugin/
 
 ## 🐛 已知问题
 
-目前没有已知的严重问题。如果遇到问题，请提交 [Issue](https://github.com/yourusername/obsidian-editorjs-plugin/issues)。
+目前没有已知的严重问题。如果遇到问题，请提交 [Issue](https://github.com/springrain1/obsidian-editorjs-plugin/issues)。
 
 ### 注意事项
 - 某些第三方 Editor.js 插件可能使用 `eval()`，这是插件本身的实现方式，不影响功能
@@ -215,7 +215,7 @@ MIT License
 ## 📞 支持
 
 - 📖 查看 [文档](QUICK_REFERENCE.md)
-- 🐛 提交 [Issue](https://github.com/yourusername/obsidian-editorjs-plugin/issues)
+- 🐛 提交 [Issue](https://github.com/springrain1/obsidian-editorjs-plugin/issues)
 - 💬 加入讨论
 - ⭐ 如果觉得有用，请给个 Star！
 
