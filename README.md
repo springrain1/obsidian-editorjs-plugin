@@ -82,7 +82,7 @@ npm run build
 | `Ctrl+U` | 下划线 |
 | `Ctrl+Shift+M` | 行内代码 |
 
-更多快捷键请查看 [快速参考](QUICK_REFERENCE.md)
+更多快捷键请查看 [快速参考](./docs/QUICK_REFERENCE.md)
 
 ## 🎨 支持的 Markdown 语法
 
@@ -214,7 +214,7 @@ MIT License
 
 ## 📞 支持
 
-- 📖 查看 [文档](QUICK_REFERENCE.md)
+- 📖 查看 [文档](./docs/QUICK_REFERENCE.md)
 - 🐛 提交 [Issue](https://github.com/springrain1/obsidian-editorjs-plugin/issues)
 - 💬 加入讨论
 - ⭐ 如果觉得有用，请给个 Star！
