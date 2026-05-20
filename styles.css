@@ -1,7 +1,9 @@
+/* Main plugin container */
+.obsidian-editorjs-plugin {
   padding: 20px 20px 300px 80px;
-  }
+}
 
-  .obsidian-editorjs-plugin .ce-block__content,
+.obsidian-editorjs-plugin .ce-block__content,
   .obsidian-editorjs-plugin .ce-toolbar__content {
     max-width: 100%;
   }
@@ -351,11 +353,9 @@
     background: var(--background-modifier-border);
     border-radius: 5px;
   }
-  }
 
   .obsidian-editorjs-plugin .codex-editor {
     padding-left: 60px;
-  }
   }
 
   /* DragDrop plugin styles - Hide by default, show on hover */
