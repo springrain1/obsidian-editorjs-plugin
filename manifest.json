@@ -1,7 +1,7 @@
 {
   "id": "editorjs-richtestview",
   "name": "Editor.js Rich Text Editor",
-  "version": "1.0.2",
+  "version": "1.0.3",
   "minAppVersion": "1.0.0",
   "description": "A block-based rich text editor powered by Editor.js.",
   "author": "springrain | 公众号:及时春雨",
