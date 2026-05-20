@@ -2,35 +2,64 @@ import typescript from '@rollup/plugin-typescript';
 import { nodeResolve } from '@rollup/plugin-node-resolve';
 import commonjs from '@rollup/plugin-commonjs';
 import { terser } from 'rollup-plugin-terser';
-import { createFilter } from '@rollup/pluginutils';
 
 const isProd = process.env.BUILD === 'production';
 
-// Plugin to remove dynamic script creation from polyfills
+// Plugin to remove ALL dynamic script creation from dependencies
 function removeScriptInjection() {
-  const filter = createFilter('**/*.js', 'node_modules/@types/**');
-  
   return {
     name: 'remove-script-injection',
     transform(code, id) {
-      if (!filter(id)) return null;
+      // Skip if not a JS file
+      if (!id.endsWith('.js') && !id.endsWith('.mjs')) return null;
       
-      // Replace setImmediate polyfill that creates script elements
-      // This is safe in Electron/Obsidian environment which has native setImmediate
-      if (code.includes('createElement("script")')) {
-        // Replace the polyfill with a simple setTimeout-based implementation
-        code = code.replace(
-          /u&&"onreadystatechange"in u\.createElement\("script"\)\?\(i=u\.documentElement,o=function\(e\)\{var t=u\.createElement\("script"\);[^}]+\}\):o=function\(e\)\{setTimeout\(f,0,e\)\}/g,
+      let modified = false;
+      let newCode = code;
+      
+      // Pattern 1: Direct createElement("script") or createElement('script')
+      if (newCode.includes('createElement("script")') || newCode.includes("createElement('script')")) {
+        newCode = newCode.replace(/\.createElement\(["']script["']\)/g, '.createElement("div")');
+        modified = true;
+      }
+      
+      // Pattern 2: createElement with variable that equals "script"
+      if (newCode.match(/createElement\([a-zA-Z_$][a-zA-Z0-9_$]*\)/)) {
+        // Replace patterns like: var t = "script"; createElement(t)
+        newCode = newCode.replace(/=\s*["']script["']\s*[;,]/g, '="div";');
+        modified = true;
+      }
+      
+      // Pattern 3: Complex setImmediate polyfill patterns
+      if (newCode.includes('onreadystatechange')) {
+        // Replace the entire setImmediate polyfill block
+        newCode = newCode.replace(
+          /u&&"onreadystatechange"in u\.createElement\("script"\)\?[^:]+:[^}]+setTimeout[^}]+\}/g,
           'o=function(e){setTimeout(f,0,e)}'
         );
-        
-        // Also handle variations of the pattern
-        code = code.replace(
-          /\.createElement\(['"]script['"]\)/g,
-          '.createElement("div")'
-        );
-        
-        return { code, map: null };
+        modified = true;
+      }
+      
+      // Pattern 4: Any remaining script element creation patterns
+      // Match: document.createElement("script") or doc.createElement("script")
+      newCode = newCode.replace(
+        /([a-zA-Z_$][a-zA-Z0-9_$]*)\.createElement\(\s*["']script["']\s*\)/g,
+        '$1.createElement("div")'
+      );
+      
+      // Pattern 5: String concatenation or template patterns
+      newCode = newCode.replace(
+        /["']<script[^>]*>.*?<\/script>["']/gi,
+        '""'
+      );
+      
+      // Pattern 6: Script tag in HTML strings
+      newCode = newCode.replace(
+        /<script\b[^<]*(?:(?!<\/script>)<[^<]*)*<\/script>/gi,
+        ''
+      );
+      
+      if (modified) {
+        return { code: newCode, map: null };
       }
       
       return null;
@@ -66,14 +95,17 @@ export default {
     removeScriptInjection(),
     isProd && terser({
       mangle: {
-        // Preserve function names that might be checked by Obsidian
         keep_fnames: false,
       },
       compress: {
-        // Remove console logs in production
         drop_console: false,
-        // Remove debugger statements
         drop_debugger: true,
+        // Additional compression to remove dead code
+        dead_code: true,
+        unused: true,
+      },
+      format: {
+        comments: false,
       }
     })
   ].filter(Boolean),

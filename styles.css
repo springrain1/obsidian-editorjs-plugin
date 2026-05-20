@@ -358,9 +358,10 @@
     padding-left: 60px;
   }
 
-  /* DragDrop plugin styles - Hide by default, show on hover */
+  /* DragDrop plugin styles - Hide drag handle */
   .obsidian-editorjs-plugin .ce-drag-handle {
-    display: none !important;
+    display: none;
+    visibility: hidden;
   }
 
   /* Alternative: If you want to keep drag functionality, uncomment below and remove above */
@@ -388,7 +389,7 @@
 }
 
 .obsidian-editorjs-plugin .ce-drag-handle:hover {
-  opacity: 1 !important;
+  opacity: 1;
   background-color: var(--background-modifier-hover);
   color: var(--text-accent);
 }
@@ -404,35 +405,6 @@
   fill: currentColor;
 }
 */
-
-  /* Reduce spacing for other block types */
-  .obsidian-editorjs-plugin .ce-header {
-    margin: 0.3em 0;
-  }
-
-  .obsidian-editorjs-plugin .cdx-quote {
-    margin: 0.5em 0;
-  }
-
-  .obsidian-editorjs-plugin .ce-code__textarea {
-    margin: 0;
-  }
-
-  .obsidian-editorjs-plugin .tc-table {
-    margin: 0.5em 0;
-  }
-
-  .obsidian-editorjs-plugin .cdx-block.image-tool {
-    margin: 0.5em 0;
-  }
-
-  .obsidian-editorjs-plugin .cdx-warning {
-    margin: 0.5em 0;
-  }
-
-  .obsidian-editorjs-plugin .ce-delimiter {
-    margin: 1em 0;
-  }
 
   /* Toolbar button improvements */
   .obsidian-editorjs-plugin .ce-toolbar__plus {
